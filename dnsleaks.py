@@ -4,7 +4,7 @@ import socket
 import select
 
 
-class ServeurDNS:
+class DNSLeaks:
     def __init__(self, ipv4: str, ipv6: str, port: int):
         self.port = port
         self.ipv4 = ipv4
@@ -12,7 +12,7 @@ class ServeurDNS:
 
         self.users = {}
 
-    def delete_user(self, identifier):
+    def _delete_user(self, identifier):
         """Supprime l'utilisateur du dictionnaire users.
 
         Args:
@@ -22,7 +22,7 @@ class ServeurDNS:
         if identifier in self.users:
             del self.users[identifier]
 
-    def get_dns_ip(self, identifier):
+    def get_dns_from_ip(self, identifier):
         """Renvoie l'ip du DNS utilisé par l'utilisateur.
 
         Args:
@@ -36,7 +36,7 @@ class ServeurDNS:
 
         return None
 
-    def handle_dns_query(self, raw_query):
+    def _handle_dns_query(self, raw_query):
         """Traite la demande du FAI.
 
         Args:
@@ -58,8 +58,7 @@ class ServeurDNS:
         elif rtype == 'AAAA':
             ip_resp = self.ipv6
         else:
-            print('Only A and AAAA are supoprted')
-            raise NotImplementedError
+            return
 
         response = dns.message.make_response(query)
         rrset = dns.rrset.from_text(name, 10, 1, rtype, ip_resp)
@@ -85,7 +84,7 @@ class ServeurDNS:
                 dgram, addr = conn.recvfrom(4096)
 
                 try:
-                    name, wire_resp = self.handle_dns_query(dgram)
+                    name, wire_resp = self._handle_dns_query(dgram)
                 except NotImplementedError:
                     continue 
 
@@ -95,7 +94,7 @@ class ServeurDNS:
              
                     self.users[identifier] = ip_addr
                     
-                    t = threading.Timer(300, self.delete_user, args=[identifier])
+                    t = threading.Timer(300, self._delete_user, args=[identifier])
                     t.start()
 
                 except ValueError as e:
@@ -104,5 +103,5 @@ class ServeurDNS:
                 conn.sendto(wire_resp, addr)
 
 if __name__ == '__main__':
-    server = ServeurDNS('127.0.0.1', '::1', 53)
+    server = DNSLeak('127.0.0.1', '::1', 53)
     server.start()
