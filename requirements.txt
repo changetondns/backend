@@ -1,0 +1,4 @@
+dnspython
+fastapi[all]
+gunicorn
+uvicorn
